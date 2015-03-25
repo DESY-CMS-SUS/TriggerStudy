@@ -3,16 +3,29 @@
 import FWCore.ParameterSet.Config as cms
 
 process = cms.Process( "TEST" )
-process.load("TriggerStudy.SimpleHLTAnalyzer.setup_cff")
+process.load("TriggerTutorial.SimpleHLTAnalyzer.setup_cff")
+#process.load("SimpleHLTAnalyzer.setup_cff")
 
 # General config options
 import FWCore.ParameterSet.VarParsing as VarParsing
 import sys
 
+
+
 options = VarParsing.VarParsing()
 
 options.register('inputFiles',
-                 '/store/mc/Phys14DR/SMS-T2tt_2J_mStop-650_mLSP-325_Tune4C_13TeV-madgraph-tauola/GEN-SIM-RAW/AVE30BX50_tsg_PHYS14_ST_V1-v2/00000/10369221-D699-E411-AED8-001E67398520.root',
+                   
+                      'rfio:/afs/cern.ch/work/s/safarzad/CMSSW_7_4_0_pre7/src/TriggerTutorial/SimpleHLTAnalyzer/test/T1tttt_gluino_1300_LSP_100_run_10248_GEN-SIM-RAW_chunk0.root',
+#                      'rfio:/afs/cern.ch/work/s/safarzad/CMSSW_7_4_0_pre7/src/TriggerTutorial/SimpleHLTAnalyzer/test/T1tttt_gluino_1300_LSP_100_run_10248_GEN-SIM-RAW_chunk1.root',
+#                       file:T1tttt_gluino_1300_LSP_100_run_10248_GEN-SIM-RAW_chunk1.root',
+#                      'file:T1tttt_gluino_1300_LSP_100_run_10248_GEN-SIM-RAW_chunk2.root',
+#		      'file:T1tttt_gluino_1300_LSP_100_run_10248_GEN-SIM-RAW_chunk3.root',
+#      		      'file:T1tttt_gluino_1300_LSP_100_run_10248_GEN-SIM-RAW_chunk4.root',
+#		      'file:T1tttt_gluino_1300_LSP_100_run_10248_GEN-SIM-RAW_chunk5.root',
+#		      'file:T1tttt_gluino_1300_LSP_100_run_10248_GEN-SIM-RAW_chunk6.root',
+#		      'file:T1tttt_gluino_1300_LSP_100_run_10248_GEN-SIM-RAW_chunk7.root',
+                 #'/store/mc/Phys14DR/SMS-T2tt_2J_mStop-650_mLSP-325_Tune4C_13TeV-madgraph-tauola/GEN-SIM-RAW/AVE30BX50_tsg_PHYS14_ST_V1-v2/00000/10369221-D699-E411-AED8-001E67398520.root',
                  VarParsing.VarParsing.multiplicity.list,
                  VarParsing.VarParsing.varType.string,
                  "Files to process")
@@ -7050,6 +7063,6 @@ process.TFileService = cms.Service("TFileService",
     fileName = cms.string(options.outputFile)
 )
 
-process.load("TriggerStudy.SimpleHLTAnalyzer.SimpleHLTAnalyzer_cfi")
+process.load("TriggerTutorial.SimpleHLTAnalyzer.SimpleHLTAnalyzer_cfi")
 
 process.out = cms.EndPath(process.hltana)

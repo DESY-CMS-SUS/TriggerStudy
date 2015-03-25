@@ -39,8 +39,10 @@
 #include "DataFormats/METReco/interface/GenMETCollection.h"
 #include "DataFormats/JetReco/interface/GenJet.h"
 #include "DataFormats/JetReco/interface/GenJetCollection.h"
+#include "DataFormats/MuonReco/interface/Muon.h"
 #include "DataFormats/METReco/interface/MET.h"
 #include "DataFormats/METReco/interface/METCollection.h"
+#include "DataFormats/HepMCCandidate/interface/GenParticle.h"
 
 
 class SimpleHLTAnalyzer : public edm::EDAnalyzer {
@@ -67,11 +69,14 @@ class SimpleHLTAnalyzer : public edm::EDAnalyzer {
     edm::InputTag trigFilter_;
     edm::InputTag trigJetFilter_;
     edm::InputTag trigMuonFilterAux_;
+    edm::InputTag trigElectronFilterAux_;
 
     edm::EDGetTokenT<edm::TriggerResults>    trigresultsToken_;
     edm::EDGetTokenT<trigger::TriggerEvent>  trigsummaryToken_;
     edm::EDGetTokenT<reco::GenMETCollection> genmetToken_;
     edm::EDGetTokenT<reco::GenJetCollection> genjetsToken_;
+    edm::EDGetTokenT<reco::GenParticleCollection > genPartToken_;
+//    edm::EDGetTokenT<reco::Muon> genPartToken_;
 
     unsigned int run_;
     unsigned int lumi_;
@@ -85,11 +90,17 @@ class SimpleHLTAnalyzer : public edm::EDAnalyzer {
     float genmetpt_, genmetphi_;
     int ngenjets_;
     float *genjetpt_, *genjeteta_, *genjetphi_, *genjetmass_;
+    int nmuons_;
+    float *muonpt_, *muoneta_, *muonphi_, *muonmass_;
     float hltmetpt_, hltmetphi_;
     int nhltjets_;
     float *hltjetpt_, *hltjeteta_, *hltjetphi_, *hltjetmass_;
     int nhltmuons_;
     float *hltmuonpt_, *hltmuoneta_, *hltmuonphi_, *hltmuonmass_;
+    int nhltelectrons_;
+    float *hltelectronpt_, *hltelectroneta_, *hltelectronphi_, *hltelectronmass_;
+    int nelectrons_;
+    float *electronpt_, *electroneta_, *electronphi_, *electronmass_;
 
     TTree* outTree_;
 
@@ -100,10 +111,13 @@ SimpleHLTAnalyzer::SimpleHLTAnalyzer(const edm::ParameterSet& iConfig) :
   trigFilter_       (iConfig.getParameter<edm::InputTag>("trigFilter")),
   trigJetFilter_    (iConfig.getParameter<edm::InputTag>("trigJetFilter")),
   trigMuonFilterAux_(iConfig.getParameter<edm::InputTag>("trigMuonFilterAux")),
+  trigElectronFilterAux_(iConfig.getParameter<edm::InputTag>("trigElectronFilterAux")),
   trigresultsToken_ (consumes<edm::TriggerResults>(iConfig.getParameter<edm::InputTag>("trigResults"))),
   trigsummaryToken_ (consumes<trigger::TriggerEvent>(iConfig.getParameter<edm::InputTag>("trigSummary"))),
   genmetToken_      (consumes<reco::GenMETCollection>(iConfig.getParameter<edm::InputTag>("genMet"))),
   genjetsToken_     (consumes<reco::GenJetCollection>(iConfig.getParameter<edm::InputTag>("genJets"))),
+  genPartToken_        (consumes<reco::GenParticleCollection>(iConfig.getParameter<edm::InputTag>("genPart"))),
+//  genPartToken_    (consumes<reco::Muon>(iConfig.getParameter<edm::InputTag>("Muons"))),
   run_  (0),
   lumi_ (0),
   evt_  (0),
@@ -132,6 +146,24 @@ SimpleHLTAnalyzer::SimpleHLTAnalyzer(const edm::ParameterSet& iConfig) :
   hltmuonphi_ = new float[maxResults_];
   hltmuonmass_ = new float[maxResults_];
 
+  nhltelectrons_ = 0;
+  hltelectronpt_ = new float[maxResults_];
+  hltelectroneta_ = new float[maxResults_];
+  hltelectronphi_ = new float[maxResults_];
+  hltelectronmass_ = new float[maxResults_];
+
+  nmuons_ = 0;
+  muonpt_ = new float[maxResults_];
+  muoneta_ = new float[maxResults_];
+  muonphi_ = new float[maxResults_];
+  muonmass_ = new float[maxResults_];
+
+  nelectrons_ = 0;
+  electronpt_ = new float[maxResults_];
+  electroneta_ = new float[maxResults_];
+  electronphi_ = new float[maxResults_];
+  electronmass_ = new float[maxResults_];
+
   edm::Service<TFileService> fs;
   outTree_ = fs->make<TTree>("HLTAnalysis","");
 
@@ -157,6 +189,21 @@ SimpleHLTAnalyzer::SimpleHLTAnalyzer(const edm::ParameterSet& iConfig) :
   outTree_->Branch("hltmuoneta",  hltmuoneta_,  "hltmuoneta[nhltmuons]/F");
   outTree_->Branch("hltmuonphi",  hltmuonphi_,  "hltmuonphi[nhltmuons]/F");
   outTree_->Branch("hltmuonmass", hltmuonmass_, "hltmuonmass[nhltmuons]/F");
+  outTree_->Branch("nmuons",   &nmuons_,  "nmuons/I");
+  outTree_->Branch("muonpt",   muonpt_,   "muonpt[nmuons]/F");
+  outTree_->Branch("muoneta",  muoneta_,  "muoneta[nmuons]/F");
+  outTree_->Branch("muonphi",  muonphi_,  "muonphi[nmuons]/F");
+  outTree_->Branch("muonmass", muonmass_, "muonmass[nmuons]/F");
+  outTree_->Branch("nelectrons",   &nelectrons_,  "nelectrons/I");
+  outTree_->Branch("electronpt",   electronpt_,   "electronpt[nelectrons]/F");
+  outTree_->Branch("electroneta",  electroneta_,  "electroneta[nelectrons]/F");
+  outTree_->Branch("electronphi",  electronphi_,  "electronphi[nelectrons]/F");
+  outTree_->Branch("electronmass", electronmass_, "electronmass[nelectrons]/F");
+  outTree_->Branch("nhltelectrons",   &nhltelectrons_,  "nhltelectrons/I");
+  outTree_->Branch("hltelectronpt",   hltelectronpt_,   "hltelectronpt[nelectrons]/F");
+  outTree_->Branch("hltelectroneta",  hltelectroneta_,  "hltelectroneta[nelectrons]/F");
+  outTree_->Branch("hltelectronphi",  hltelectronphi_,  "hltelectronphi[nelectrons]/F");
+  outTree_->Branch("hltelectronmass", hltelectronmass_, "hltelectronmass[nelectrons]/F");
 
 }
 
@@ -200,6 +247,7 @@ SimpleHLTAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
   trigger::size_type trigFilterIndex = trigsummary->filterIndex( trigFilter_ );
   trigger::size_type trigJetFilterIndex = trigsummary->filterIndex( trigJetFilter_ );
   trigger::size_type trigMuonFilterAuxIndex = trigsummary->filterIndex( trigMuonFilterAux_ );
+  trigger::size_type trigElectronFilterAuxIndex = trigsummary->filterIndex( trigElectronFilterAux_ );
 
   trigger::TriggerObjectCollection triggerObjects = trigsummary->getObjects();
 
@@ -238,6 +286,18 @@ SimpleHLTAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
     }
   }
 
+ if(trigElectronFilterAuxIndex < trigsummary->sizeFilters()) {
+    const trigger::Keys& trigKeys = trigsummary->filterKeys(trigElectronFilterAuxIndex);
+    nhltelectrons_ = trigKeys.size();
+    for(unsigned int ik = 0; ik < trigKeys.size(); ++ik){
+      const trigger::TriggerObject& obj = triggerObjects[trigKeys[ik]];
+      hltelectronpt_[ik] = obj.pt();
+      hltelectroneta_[ik] = obj.eta();
+      hltelectronphi_[ik] = obj.phi();
+      hltelectronmass_[ik] = obj.mass();
+    }
+  }
+
   // gen quantities
   edm::Handle<reco::GenMETCollection> genmets;
   iEvent.getByToken(genmetToken_, genmets);
@@ -259,7 +319,48 @@ SimpleHLTAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
     genjetmass_[igj] = gj.mass();
     igj++;
   }
+edm::Handle<reco::GenParticleCollection> gen;
+iEvent.getByToken(genPartToken_,gen);
+//if (gen.isValid()) {
+//for (reco::GenParticleCollection::size_type i=0; i+1<gen.product()->size(); i++) {
+  unsigned int igm = 0;
+  nmuons_ =0;
+ unsigned int ige = 0;
+  nelectrons_ =0;
+  for(const reco::GenParticle &gg : *gen) {
+	if (abs(gg.pdgId()) == 13 && gg.status() == 1) {
+	muonpt_[igm] = gg.pt();
+	muoneta_[igm] = gg.eta();
+	muonphi_[igm] = gg.phi();
+	muonmass_[igm] = gg.mass();
+	nmuons_ ++;
+        igm++;
+	}
+        else if (abs(gg.pdgId()) == 11 && gg.status() == 1) {
+        electronpt_[ige] = gg.pt();
+        electroneta_[ige] = gg.eta();
+        electronphi_[ige] = gg.phi();
+        electronmass_[ige] = gg.mass();
+        nelectrons_++;
+        ige++;
+        }
+	}
 
+/*
+ unsigned int ige = 0;
+  nelectrons_ =0;
+  for(const reco::GenParticle &ge : *gen) {
+        if (abs(ge.pdgId()) == 11 && ge.status() == 1) {
+        electronpt_[ige] = ge.pt();
+        electroneta_[ige] = ge.eta();
+        electronphi_[ige] = ge.phi();
+        electronmass_[ige] = ge.mass();
+        nelectrons_++;
+        ige++;
+        }
+        }
+*/
+//}
   outTree_->Fill();
 
 }
