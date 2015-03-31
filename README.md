@@ -7,7 +7,7 @@ Info from the trigger tutorial talk: https://indico.cern.ch/event/375107/contrib
 cmsrel CMSSW_7_4_0_pre9
 cd CMSSW_7_4_0_pre9/src
 cmsenv
-git clone https://github.com/DESY-CMS-SUS/TriggerTutorial.git [TriggerStudy]
+git clone https://github.com/DESY-CMS-SUS/TriggerStudy
 scram b -j4
 ```
 
